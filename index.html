@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兔狗游戏 - Dog Bunny Puzzle</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>兔狗游戏</h1>
+            <p>将兔子移动到胡萝卜🥕，将狗移动到骨头🦴</p>
+            <div class="controls">
+                <button id="resetBtn">重新开始</button>
+                <button id="hintBtn">提示</button>
+                <button id="nextLevelBtn">下一关</button>
+                <select id="levelSelect">
+                    <option value="0">基础关卡</option>
+                    <option value="1">进阶关卡</option>
+                    <option value="2">困难关卡</option>
+                </select>
+                <div class="moves-counter">移动次数: <span id="moveCount">0</span></div>
+            </div>
+        </header>
+
+        <main class="game-board">
+            <!-- 游戏位置节点 -->
+            <div class="location house" id="house" data-location="house">
+                <div class="location-icon">🏠</div>
+                <div class="location-name">房子</div>
+                <div class="animals-container"></div>
+            </div>
+
+            <div class="location bone" id="bone" data-location="bone">
+                <div class="location-icon">🦴</div>
+                <div class="location-name">骨头</div>
+                <div class="animals-container"></div>
+            </div>
+
+            <div class="location boat" id="boat" data-location="boat">
+                <div class="location-icon">⛵</div>
+                <div class="location-name">船</div>
+                <div class="animals-container"></div>
+            </div>
+
+            <div class="location tree" id="tree" data-location="tree">
+                <div class="location-icon">🌳</div>
+                <div class="location-name">树</div>
+                <div class="animals-container"></div>
+            </div>
+
+            <div class="location well" id="well" data-location="well">
+                <div class="location-icon">🏺</div>
+                <div class="location-name">井</div>
+                <div class="animals-container"></div>
+            </div>
+
+            <div class="location flower" id="flower" data-location="flower">
+                <div class="location-icon">🌸</div>
+                <div class="location-name">花</div>
+                <div class="animals-container"></div>
+            </div>
+
+            <div class="location carrot" id="carrot" data-location="carrot">
+                <div class="location-icon">🥕</div>
+                <div class="location-name">胡萝卜</div>
+                <div class="animals-container"></div>
+            </div>
+
+            <!-- 连接线 -->
+            <svg class="connections" viewBox="0 0 800 600">
+                <!-- 定义箭头标记 -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7"
+                            refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                    </marker>
+                    <marker id="arrowhead-conditional" markerWidth="10" markerHeight="7"
+                            refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#ff6b6b" />
+                    </marker>
+                    <marker id="arrowhead-active" markerWidth="10" markerHeight="7"
+                            refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#48bb78" />
+                    </marker>
+                </defs>
+
+                <!-- 无条件连接 (实线曲线) -->
+                <!-- 骨头 ↔ 船 -->
+                <path class="connection" d="M 300 150 Q 425 120 550 150" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+                <path class="connection" d="M 550 150 Q 425 180 300 150" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+
+                <!-- 花 ↔ 船 -->
+                <path class="connection" d="M 550 300 Q 575 225 550 150" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+                <path class="connection" d="M 550 150 Q 525 225 550 300" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+
+                <!-- 胡萝卜 ↔ 树 -->
+                <path class="connection" d="M 300 450 Q 275 375 300 300" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+                <path class="connection" d="M 300 300 Q 325 375 300 450" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+
+                <!-- 树 ↔ 井 -->
+                <path class="connection" d="M 300 300 Q 350 280 400 300" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+                <path class="connection" d="M 400 300 Q 350 320 300 300" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+
+                <!-- 井 ↔ 花 -->
+                <path class="connection" d="M 400 300 Q 475 280 550 300" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+                <path class="connection" d="M 550 300 Q 475 320 400 300" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+
+                <!-- 条件连接 (虚线曲线) -->
+                <!-- 房子 → 骨头 (需要胡萝卜处有动物) -->
+                <path class="connection conditional" id="house-bone" d="M 200 150 Q 250 130 300 150"
+                      stroke="#ff6b6b" stroke-width="3" fill="none" stroke-dasharray="8,4"
+                      marker-end="url(#arrowhead-conditional)" data-condition="carrot"/>
+
+                <!-- 房子 → 船 (需要树处有动物) -->
+                <path class="connection conditional" id="house-boat" d="M 200 150 Q 375 100 550 150"
+                      stroke="#ff6b6b" stroke-width="3" fill="none" stroke-dasharray="8,4"
+                      marker-end="url(#arrowhead-conditional)" data-condition="tree"/>
+
+                <!-- 船 → 房子 (需要树处有动物) -->
+                <path class="connection conditional" id="boat-house" d="M 550 150 Q 375 200 200 150"
+                      stroke="#ff6b6b" stroke-width="3" fill="none" stroke-dasharray="8,4"
+                      marker-end="url(#arrowhead-conditional)" data-condition="tree"/>
+
+                <!-- 树 → 房子 (需要骨头和花处都有动物) -->
+                <path class="connection conditional" id="tree-house" d="M 300 300 Q 200 225 200 150"
+                      stroke="#ff6b6b" stroke-width="3" fill="none" stroke-dasharray="8,4"
+                      marker-end="url(#arrowhead-conditional)" data-condition="bone,flower"/>
+
+                <!-- 井 → 胡萝卜 (需要骨头处没有动物) -->
+                <path class="connection conditional" id="well-carrot" d="M 400 300 Q 350 375 300 450"
+                      stroke="#ff6b6b" stroke-width="3" fill="none" stroke-dasharray="8,4"
+                      marker-end="url(#arrowhead-conditional)" data-condition="!bone"/>
+
+                <!-- 规则标注 -->
+                <!-- 房子→骨头条件标注 -->
+                <text x="250" y="135" class="rule-label" text-anchor="middle">需要🥕有动物</text>
+
+                <!-- 房子→船条件标注 -->
+                <text x="375" y="115" class="rule-label" text-anchor="middle">需要🌳有动物</text>
+
+                <!-- 船→房子条件标注 -->
+                <text x="375" y="185" class="rule-label" text-anchor="middle">需要🌳有动物</text>
+
+                <!-- 树→房子条件标注 -->
+                <text x="220" y="210" class="rule-label" text-anchor="middle">需要🦴🌸有动物</text>
+
+                <!-- 井→胡萝卜条件标注 -->
+                <text x="350" y="390" class="rule-label" text-anchor="middle">需要🦴无动物</text>
+            </svg>
+
+            <!-- 动物 -->
+            <div class="animal rabbit" id="rabbit1" data-animal="rabbit" draggable="true">🐰</div>
+            <div class="animal rabbit" id="rabbit2" data-animal="rabbit" draggable="true">🐰</div>
+            <div class="animal dog" id="dog1" data-animal="dog" draggable="true">🐕</div>
+        </main>
+
+        <!-- 游戏规则说明 -->
+        <div class="rules-panel" id="rulesPanel">
+            <div class="rules-content">
+                <h3>🎮 游戏规则详解</h3>
+
+                <div class="rule-section">
+                    <h4>🎯 游戏目标</h4>
+                    <p>将所有兔子🐰移动到胡萝卜🥕位置，将所有狗🐕移动到骨头🦴位置</p>
+                </div>
+
+                <div class="rule-section">
+                    <h4>🛤️ 路径类型</h4>
+                    <div class="path-types">
+                        <div class="path-type">
+                            <div class="path-example solid"></div>
+                            <span>实线路径：可以自由通过</span>
+                        </div>
+                        <div class="path-type">
+                            <div class="path-example dashed"></div>
+                            <span>虚线路径：需要满足特定条件</span>
+                        </div>
+                        <div class="path-type">
+                            <div class="path-example active"></div>
+                            <span>绿色路径：条件已满足，可通过</span>
+                        </div>
+                        <div class="path-type">
+                            <div class="path-example inactive"></div>
+                            <span>红色路径：条件未满足，无法通过</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rule-section">
+                    <h4>📋 条件路径规则</h4>
+                    <ul class="condition-rules">
+                        <li><span class="route">🏠 → 🦴</span> 需要胡萝卜🥕处有动物</li>
+                        <li><span class="route">🏠 → ⛵</span> 需要树🌳处有动物</li>
+                        <li><span class="route">⛵ → 🏠</span> 需要树🌳处有动物</li>
+                        <li><span class="route">🌳 → 🏠</span> 需要骨头🦴和花🌸处都有动物</li>
+                        <li><span class="route">🏺 → 🥕</span> 需要骨头🦴处没有动物</li>
+                    </ul>
+                </div>
+
+                <div class="rule-section">
+                    <h4>💡 游戏提示</h4>
+                    <ul>
+                        <li>拖拽动物时会显示可用路径的预览</li>
+                        <li>绿色标注表示条件已满足</li>
+                        <li>红色标注表示条件未满足</li>
+                        <li>使用提示功能获取智能建议</li>
+                    </ul>
+                </div>
+
+                <button id="closeRules">关闭</button>
+            </div>
+        </div>
+
+        <!-- 胜利提示 -->
+        <div class="victory-modal" id="victoryModal">
+            <div class="victory-content">
+                <h2>🎉 恭喜通关！</h2>
+                <p>你用了 <span id="finalMoves">0</span> 步完成了游戏！</p>
+                <div class="victory-buttons">
+                    <button id="playAgain">再玩一次</button>
+                    <button id="nextLevelVictory">下一关</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示面板 -->
+        <div class="hint-panel" id="hintPanel">
+            <h3>💡 提示</h3>
+            <p id="hintText">点击提示按钮获取下一步建议</p>
+            <button id="closeHint">关闭</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
